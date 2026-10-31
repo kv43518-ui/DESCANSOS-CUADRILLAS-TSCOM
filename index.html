@@ -1,0 +1,1014 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Solicitud de Descansos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una columna de trabajo; panel de estado arriba; dos botones de fecha que abren un calendario del mes; el administrador ve resumen por día y apelaciones. */
+:root {
+  --bg: #f1f4f5;
+  --surface: #ffffff;
+  --ink: #14232b;
+  --muted: #566871;
+  --line: #d3dce0;
+  --accent: #0d6b65;
+  --accent-ink: #ffffff;
+  --focus: #1b6fd1;
+  --ok: #1d7a3b;
+  --ok-bg: #e0f2e5;
+  --warn: #8f5200;
+  --warn-bg: #fdeccb;
+  --bad: #a3261c;
+  --bad-bg: #fbe3e0;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1a1f;
+    --surface: #17252c;
+    --ink: #e5eef1;
+    --muted: #94a6ad;
+    --line: #2b3d45;
+    --accent: #45c1b6;
+    --accent-ink: #062927;
+    --focus: #7db4f5;
+    --ok: #74d391;
+    --ok-bg: #12301f;
+    --warn: #f0b85f;
+    --warn-bg: #3a2a0d;
+    --bad: #ff9e94;
+    --bad-bg: #3b1814;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1a1f;
+  --surface: #17252c;
+  --ink: #e5eef1;
+  --muted: #94a6ad;
+  --line: #2b3d45;
+  --accent: #45c1b6;
+  --accent-ink: #062927;
+  --focus: #7db4f5;
+  --ok: #74d391;
+  --ok-bg: #12301f;
+  --warn: #f0b85f;
+  --warn-bg: #3a2a0d;
+  --bad: #ff9e94;
+  --bad-bg: #3b1814;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.45;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+h1, h2 { font-family: var(--display); font-weight: 700; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(34px, 8vw, 52px); line-height: 1; text-transform: uppercase; letter-spacing: 0.01em; }
+h2 { font-size: 22px; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.02em; }
+.eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.hint { color: var(--muted); font-size: 14px; }
+button, select, input, textarea { font: inherit; color: inherit; }
+
+/* Estado */
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 14px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+.cd { font-family: var(--mono); font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.dl { color: var(--muted); font-size: 14px; min-width: 0; }
+
+/* Pestañas */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { padding: 9px 14px; min-height: 42px; background: transparent; border: 1.5px solid var(--line); border-radius: 6px; font-weight: 600; cursor: pointer; }
+.tab.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.tab:focus-visible, .btn:focus-visible, .datebtn:focus-visible, .calday:focus-visible, .calnav:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Paneles y avisos */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.note { padding: 12px 14px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+.note.bad { background: var(--bad-bg); border-color: transparent; color: var(--bad); }
+.note.warn { background: var(--warn-bg); border-color: transparent; color: var(--warn); }
+.note.ok { background: var(--ok-bg); border-color: transparent; color: var(--ok); }
+.confirm { padding: 14px 16px; border-radius: 6px; background: var(--ok-bg); display: flex; flex-direction: column; gap: 2px; }
+.confirm-k { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ok); }
+.confirm-v { font-family: var(--display); font-size: 28px; font-weight: 700; line-height: 1.1; }
+.confirm .hint { color: var(--ink); opacity: 0.8; }
+.msg { min-height: 22px; font-size: 14px; font-weight: 500; }
+.msg.ok { color: var(--ok); }
+.msg.bad { color: var(--bad); }
+
+/* Formularios */
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+fieldset[disabled] { opacity: 0.6; }
+.field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.label { font-weight: 600; }
+select, input[type="text"], input[type="date"], input[type="datetime-local"], textarea { width: 100%; min-height: 48px; padding: 10px 12px; background: var(--bg); border: 1.5px solid var(--line); border-radius: 6px; }
+select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+textarea { resize: vertical; line-height: 1.5; }
+.btn { min-height: 48px; padding: 10px 18px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 6px; font-weight: 600; cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.gate input[type="text"] { text-transform: uppercase; font-family: var(--mono); font-size: 18px; letter-spacing: 0.12em; }
+.crewfixed { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; background: var(--bg); border: 1.5px solid var(--line); border-radius: 6px; font-family: var(--display); font-size: 26px; font-weight: 700; text-transform: uppercase; }
+.crewfixed .btn { min-height: 40px; padding: 4px 12px; font-size: 14px; font-family: var(--body); text-transform: none; }
+
+/* Botones de fecha y calendario */
+.datebtns { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.datebtn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; min-height: 78px; padding: 12px 14px; text-align: left; background: var(--bg); border: 1.5px solid var(--line); border-radius: 6px; cursor: pointer; }
+.datebtn .dk { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.datebtn .dv { font-family: var(--display); font-size: 24px; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; }
+.datebtn.set { border-color: var(--accent); }
+.datebtn.open { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.datebtn.open .dk { color: inherit; opacity: 0.85; }
+.datebtn:disabled { opacity: 0.55; cursor: not-allowed; }
+.cal { margin-top: 10px; padding: 12px; background: var(--bg); border: 1.5px solid var(--line); border-radius: 6px; display: flex; flex-direction: column; gap: 8px; }
+.calhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.calhead strong { font-family: var(--display); font-size: 22px; text-transform: uppercase; }
+.calnav { min-width: 44px; min-height: 44px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 6px; font-weight: 600; cursor: pointer; }
+.calnav:disabled { opacity: 0.35; cursor: not-allowed; }
+.calgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.calwd { text-align: center; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); }
+.calday { min-height: 44px; padding: 0; border-radius: 6px; border: 1.5px solid transparent; background: transparent; color: var(--muted); opacity: 0.45; font-variant-numeric: tabular-nums; cursor: default; }
+.calday.on { opacity: 1; color: var(--ink); background: var(--surface); border-color: var(--accent); font-weight: 600; cursor: pointer; }
+.calday.sel { background: var(--accent); color: var(--accent-ink); }
+.calday.taken { opacity: 0.5; text-decoration: line-through; }
+.calhint { font-size: 13px; color: var(--muted); }
+
+/* Apelación */
+.counter { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.thumb { max-width: 100%; max-height: 160px; border-radius: 6px; border: 1px solid var(--line); cursor: zoom-in; }
+.thumb.big { max-height: 440px; cursor: zoom-out; }
+.appeal { padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.appeal p { margin: 0; overflow-wrap: anywhere; }
+
+/* Resumen */
+.sumtop { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.big { font-family: var(--display); font-size: 40px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { padding: 3px 10px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); font-size: 14px; font-weight: 500; }
+.daygrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.daycard { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.daycard.empty { opacity: 0.65; }
+.dc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.dc-date { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.dc-n { font-family: var(--display); font-size: 28px; font-weight: 700; line-height: 1; }
+.dc-list { margin: 0; padding: 0; list-style: none; font-size: 14px; display: flex; flex-direction: column; gap: 2px; }
+.dc-list li { overflow-wrap: anywhere; }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 640px; }
+th { text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 6px 10px 6px 0; }
+td { padding: 8px 10px 8px 0; border-top: 1px solid var(--line); vertical-align: middle; font-size: 15px; }
+td select { min-height: 40px; padding: 6px 8px; width: auto; min-width: 120px; }
+td.mono { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--line); color: var(--muted); margin-right: 4px; }
+.tag.ok { background: var(--ok-bg); color: var(--ok); }
+.tag.warn { background: var(--warn-bg); color: var(--warn); }
+.tag.bad { background: var(--bad-bg); color: var(--bad); }
+.dayinputs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.dayinputs label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+.copybox { font-family: var(--mono); font-size: 13px; min-height: 120px; }
+.crewrows { display: flex; flex-direction: column; gap: 8px; }
+.crewrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.crewrow input[type="text"] { flex: 1 1 160px; width: auto; min-width: 0; min-height: 44px; }
+.crewrow .code { font-family: var(--mono); font-size: 16px; font-weight: 500; letter-spacing: 0.08em; padding: 8px 10px; min-width: 104px; text-align: center; background: var(--bg); border: 1.5px dashed var(--line); border-radius: 6px; }
+.crewrow .btn { min-height: 44px; padding: 6px 12px; font-size: 14px; }
+footer { color: var(--muted); font-size: 13px; }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 6px; background: var(--ink); color: var(--bg); font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+#toast.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header id="head"></header>
+  <nav id="tabs" class="tabs" role="tablist" hidden></nav>
+  <main>
+    <section id="v-solicitar"></section>
+    <section id="v-resumen" hidden></section>
+    <section id="v-configurar" hidden>
+      <form id="cfgForm" class="panel" novalidate>
+        <div class="field">
+          <h2>Días habilitados</h2>
+          <span class="hint">Son los únicos días que se pueden tocar en el calendario. Cada cuadrilla elige 2 de ellos.</span>
+          <div id="dayInputs" class="dayinputs"></div>
+        </div>
+        <div class="field">
+          <h2>Fecha límite</h2>
+          <label class="hint" for="deadline">Después de este momento nadie puede enviar, cambiar ni apelar. Hora de El Salvador.</label>
+          <input type="datetime-local" id="deadline">
+        </div>
+        <div class="field">
+          <h2>Cuadrillas y accesos</h2>
+          <span class="hint">Cada cuadrilla entra con su propio código. Puedes renombrar, cambiar un código o agregar cuadrillas. Las cuadrillas ya creadas no se pueden quitar, para no perder sus solicitudes. Guarda para activar los cambios.</span>
+          <div id="crewRows" class="crewrows"></div>
+          <div class="row">
+            <button type="button" class="btn" id="addCrew">Agregar cuadrilla</button>
+            <button type="button" class="btn" id="copyCodes">Copiar todos los códigos</button>
+          </div>
+        </div>
+        <div class="row">
+          <button type="submit" class="btn primary" id="saveCfg">Guardar configuración</button>
+          <span id="cfgMsg" class="msg" role="status"></span>
+        </div>
+      </form>
+    </section>
+  </main>
+  <footer>Hora de El Salvador (UTC−6). Cada solicitud se guarda con la hora en que se envió.</footer>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var TZ = 'America/El_Salvador';
+  var MES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var DIA = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  var CODE_KEY = 'descansos-code';
+  var MAX_CHANGES = 2;
+  var MAX_APPEAL = 100;
+
+  var S = {
+    db: null, uid: null, owner: false, canWrite: null,
+    cfg: undefined, tab: 'solicitar', tabSet: false, slow: false,
+    codes: [], codesLoaded: false, draft: [], dirty: false, unlockErr: '',
+    crewIdx: null, pending: null, pendingCode: '',
+    pet: null, apel: null, allPet: [], allApel: [], bigImg: null,
+    pick: { a: '', b: '' }, touched: false, openCal: null, calMonth: null,
+    busy: false, msg: null,
+    showAppeal: false, apText: '', apFile: null, apDates: { a: '', b: '' }, apMsg: null, apBusy: false
+  };
+  var lastState = '';
+  var crewUnsubs = [];
+
+  function $(s) { return document.querySelector(s); }
+  function h(tag, attrs) {
+    var e = document.createElement(tag);
+    if (attrs) for (var k in attrs) {
+      var v = attrs[k];
+      if (v == null || v === false) continue;
+      if (k === 'class') e.className = v;
+      else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), v);
+      else if (v === true) e.setAttribute(k, '');
+      else e.setAttribute(k, v);
+    }
+    for (var i = 2; i < arguments.length; i++) add(e, arguments[i]);
+    return e;
+  }
+  function add(e, c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) { c.forEach(function (x) { add(e, x); }); return; }
+    e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  function note(kind, text) { return h('div', { class: 'note' + (kind ? ' ' + kind : '') }, text); }
+  function tag(kind, text) { return h('span', { class: 'tag' + (kind ? ' ' + kind : '') }, text); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  /* Fechas */
+  function dp(s) {
+    var a = s.split('-').map(Number);
+    var dt = new Date(Date.UTC(a[0], a[1] - 1, a[2]));
+    return { wd: DIA[dt.getUTCDay()], d: a[2], mi: a[1] - 1, m: MES[a[1] - 1], y: a[0] };
+  }
+  function longDay(s) { var p = dp(s); return p.wd + ' ' + p.d + ' de ' + p.m; }
+  function shortDay(s) { var p = dp(s); return p.wd.slice(0, 3) + ' ' + p.d + ' ' + p.m.slice(0, 3); }
+  var dlFmt = new Intl.DateTimeFormat('es', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true });
+  var sentFmt = new Intl.DateTimeFormat('es', { timeZone: TZ, day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
+  function dlText(cfg) { return dlFmt.format(new Date(cfg.deadline)); }
+  function sentText(iso) { var t = Date.parse(iso); return isNaN(t) ? '' : sentFmt.format(new Date(t)); }
+  function toLocalInput(iso) {
+    var parts = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(iso));
+    var p = {};
+    parts.forEach(function (x) { p[x.type] = x.value; });
+    return p.year + '-' + p.month + '-' + p.day + 'T' + p.hour + ':' + p.minute;
+  }
+  function remain(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000));
+    var d = Math.floor(s / 86400), hh = Math.floor(s % 86400 / 3600), mm = Math.floor(s % 3600 / 60), ss = s % 60;
+    if (d > 0) return d + ' d ' + hh + ' h ' + mm + ' min';
+    if (hh > 0) return hh + ' h ' + pad(mm) + ' min';
+    return mm + ' min ' + pad(ss) + ' s';
+  }
+  function normCfg(d) {
+    return {
+      days: Array.isArray(d.days) ? d.days.filter(function (s) { return /^\d{4}-\d{2}-\d{2}$/.test(s); }).sort() : [],
+      crews: Array.isArray(d.crews) ? d.crews.map(String) : [],
+      codes: Array.isArray(d.codes) ? d.codes.map(String) : [],
+      deadline: String(d.deadline || ''),
+      closed: !!d.closed
+    };
+  }
+  function validDates(d) {
+    return d && Array.isArray(d.dates) && d.dates.length === 2 && d.dates.every(function (x) { return typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x); });
+  }
+  function sameSet(x, y) { return x.slice().sort().join('|') === y.slice().sort().join('|'); }
+  function isClosed() {
+    var c = S.cfg;
+    if (!c) return true;
+    var t = Date.parse(c.deadline);
+    return c.closed || isNaN(t) || Date.now() >= t;
+  }
+  function monthName(cfg) { return dp(cfg.days[0]).m; }
+  function stateKey() {
+    if (!S.cfg) return 'x';
+    if (isClosed()) return 'c';
+    return (Date.parse(S.cfg.deadline) - Date.now()) < 6 * 3600 * 1000 ? 's' : 'o';
+  }
+
+  /* Accesos por cuadrilla: el administrador genera un código por cuadrilla.
+     La página guarda solo su huella (SHA-256) en config; el código en claro lo lee solo el administrador. */
+  var ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  function codeMode() { var c = S.cfg; return !!c && c.crews.length > 0 && c.codes.length === c.crews.length; }
+  function genCode() {
+    var a = new Uint32Array(6);
+    crypto.getRandomValues(a);
+    return Array.from(a).map(function (n) { return ALPHA[n % ALPHA.length]; }).join('');
+  }
+  async function hashCode(i, code) {
+    var data = new TextEncoder().encode('descansos|' + i + '|' + String(code).trim().toUpperCase());
+    var buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
+  async function unlock(code) {
+    var clean = String(code).trim().toUpperCase();
+    if (!clean || !codeMode() || !window.crypto || !crypto.subtle) return -1;
+    for (var i = 0; i < S.cfg.crews.length; i++) {
+      if (await hashCode(i, clean) === S.cfg.codes[i]) return i;
+    }
+    return -1;
+  }
+  async function tryUnlock(code) {
+    var i = await unlock(code);
+    if (i < 0) { S.pending = null; S.unlockErr = 'Código incorrecto. Revisa que esté completo.'; renderSolicitar(); return; }
+    S.pending = i; S.pendingCode = String(code).trim().toUpperCase(); S.unlockErr = '';
+    renderSolicitar();
+  }
+  function confirmCrew() {
+    try { localStorage.setItem(CODE_KEY, S.pendingCode); } catch (e) {}
+    S.crewIdx = S.pending; S.pending = null; S.pendingCode = '';
+    resetWork();
+    subscribeCrew();
+    renderSolicitar();
+  }
+  function cancelPending() { S.pending = null; S.pendingCode = ''; renderSolicitar(); }
+  function leaveCrew() {
+    try { localStorage.removeItem(CODE_KEY); } catch (e) {}
+    S.crewIdx = null; S.pending = null;
+    resetWork();
+    subscribeCrew();
+    renderSolicitar();
+  }
+  function resetWork() {
+    S.pick = { a: '', b: '' }; S.touched = false; S.openCal = null; S.msg = null;
+    S.showAppeal = false; S.apText = ''; S.apFile = null; S.apDates = { a: '', b: '' }; S.apMsg = null;
+  }
+  async function revalidate() {
+    var saved = null;
+    try { saved = localStorage.getItem(CODE_KEY); } catch (e) {}
+    var i = saved ? await unlock(saved) : -1;
+    if (i < 0 && saved) { try { localStorage.removeItem(CODE_KEY); } catch (e) {} }
+    var next = i >= 0 ? i : null;
+    if (next !== S.crewIdx) { S.crewIdx = next; resetWork(); subscribeCrew(); }
+    renderSolicitar();
+  }
+  function subscribeCrew() {
+    crewUnsubs.forEach(function (f) { try { f(); } catch (e) {} });
+    crewUnsubs = [];
+    S.pet = null; S.apel = null;
+    if (S.crewIdx == null || !S.db) return;
+    var i = S.crewIdx;
+    crewUnsubs.push(S.db.doc('peticiones/c' + i).onSnapshot(function (snap) {
+      var d = snap.exists ? snap.data() : null;
+      S.pet = validDates(d) ? d : null;
+      if (S.pet && !S.touched) S.pick = { a: S.pet.dates[0], b: S.pet.dates[1] };
+      renderSolicitar();
+    }, function () {}));
+    crewUnsubs.push(S.db.doc('apelaciones/c' + i).onSnapshot(function (snap) {
+      S.apel = snap.exists ? snap.data() : null;
+      renderSolicitar();
+    }, function () {}));
+  }
+
+  function toast(t) {
+    var el = $('#toast');
+    el.textContent = t;
+    el.classList.add('show');
+    clearTimeout(toast.t);
+    toast.t = setTimeout(function () { el.classList.remove('show'); }, 2600);
+  }
+  function copyText(text, okMsg) {
+    function fail() { toast('No se pudo copiar. Selecciona el texto a mano.'); }
+    try { navigator.clipboard.writeText(text).then(function () { toast(okMsg); }, fail); } catch (e) { fail(); }
+  }
+
+  /* Encabezado */
+  function renderHead() {
+    var el = $('#head');
+    el.replaceChildren();
+    var cfg = S.cfg;
+    el.append(h('div', { class: 'eyebrow' }, 'Cuadrillas · solicitud de descanso'));
+    el.append(h('h1', null, cfg && cfg.days.length ? 'Descanso de ' + monthName(cfg) : 'Descanso del mes'));
+    lastState = stateKey();
+    if (cfg) {
+      var closed = isClosed();
+      var key = lastState;
+      var pillText = closed ? 'Cerrado' : (key === 's' ? 'Cierra pronto' : 'Abierto');
+      var pillCls = closed ? 'bad' : (key === 's' ? 'warn' : 'ok');
+      var line = closed
+        ? (cfg.closed ? 'Cerrado por el administrador' : 'Cerró el ' + dlText(cfg))
+        : 'Cierra el ' + dlText(cfg);
+      el.append(h('div', { class: 'status' },
+        h('span', { class: 'pill ' + pillCls }, pillText),
+        closed ? null : h('span', { class: 'cd', id: 'cd' }),
+        h('span', { class: 'dl' }, line)));
+      updateCd();
+    }
+  }
+  function updateCd() {
+    var cd = $('#cd');
+    if (cd && S.cfg) cd.textContent = remain(Date.parse(S.cfg.deadline) - Date.now());
+  }
+  function tick() {
+    if (!S.cfg) return;
+    if (stateKey() !== lastState) { renderAll(); return; }
+    updateCd();
+  }
+
+  /* Pestañas */
+  function renderTabs() {
+    var nav = $('#tabs');
+    nav.replaceChildren();
+    if (!S.owner) { nav.hidden = true; return; }
+    nav.hidden = false;
+    var pend = S.allApel.filter(function (a) { return a.status === 'pendiente'; }).length;
+    [['solicitar', 'Solicitar descanso'], ['resumen', pend ? 'Resumen (' + pend + ')' : 'Resumen'], ['configurar', 'Configurar']].forEach(function (t) {
+      nav.append(h('button', { type: 'button', role: 'tab', 'aria-selected': String(S.tab === t[0]), class: 'tab' + (S.tab === t[0] ? ' on' : ''),
+        onclick: function () { S.tab = t[0]; showTab(); } }, t[1]));
+    });
+  }
+  function showTab() {
+    renderTabs();
+    ['solicitar', 'resumen', 'configurar'].forEach(function (id) { $('#v-' + id).hidden = S.tab !== id; });
+  }
+
+  /* Calendario */
+  function monthKeys() {
+    var out = [];
+    S.cfg.days.forEach(function (d) { var k = d.slice(0, 7); if (out.indexOf(k) < 0) out.push(k); });
+    return out;
+  }
+  function calendarEl(sel, other, onPick) {
+    var months = monthKeys();
+    if (!S.calMonth || months.indexOf(S.calMonth) < 0) S.calMonth = sel ? sel.slice(0, 7) : months[0];
+    var mi = months.indexOf(S.calMonth);
+    var y = Number(S.calMonth.slice(0, 4)), m = Number(S.calMonth.slice(5, 7));
+    var first = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
+    var count = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    var enabled = {};
+    S.cfg.days.forEach(function (d) { enabled[d] = true; });
+    var grid = h('div', { class: 'calgrid' });
+    ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'].forEach(function (w) { grid.append(h('div', { class: 'calwd' }, w)); });
+    for (var b = 0; b < first; b++) grid.append(h('div'));
+    var mk = function (iso, d) {
+      var on = !!enabled[iso];
+      var taken = iso === other;
+      var cls = 'calday' + (on ? ' on' : '') + (iso === sel ? ' sel' : '') + (taken ? ' taken' : '');
+      return h('button', { type: 'button', class: cls, disabled: !on || taken, 'aria-pressed': iso === sel ? 'true' : 'false',
+        'aria-label': longDay(iso), title: taken ? 'Ya elegiste este día en la otra fecha' : null,
+        onclick: function () { onPick(iso); } }, String(d));
+    };
+    for (var d = 1; d <= count; d++) grid.append(mk(S.calMonth + '-' + pad(d), d));
+    return h('div', { class: 'cal' },
+      h('div', { class: 'calhead' },
+        h('button', { type: 'button', class: 'calnav', 'aria-label': 'Mes anterior', disabled: mi <= 0, onclick: function () { S.calMonth = months[mi - 1]; renderSolicitar(); } }, '‹'),
+        h('strong', null, MES[m - 1] + ' ' + y),
+        h('button', { type: 'button', class: 'calnav', 'aria-label': 'Mes siguiente', disabled: mi >= months.length - 1, onclick: function () { S.calMonth = months[mi + 1]; renderSolicitar(); } }, '›')),
+      grid,
+      h('div', { class: 'calhint' }, 'Solo se pueden tocar los días resaltados.'));
+  }
+  function dateButtons(prefix, vals, setVal, locked) {
+    var wrap = h('div');
+    var row = h('div', { class: 'datebtns' });
+    ['a', 'b'].forEach(function (slot, idx) {
+      var key = prefix + slot, v = vals[slot], open = S.openCal === key;
+      row.append(h('button', { type: 'button', class: 'datebtn' + (v ? ' set' : '') + (open ? ' open' : ''), disabled: locked, 'aria-expanded': String(open),
+        onclick: function () { S.openCal = open ? null : key; if (v) S.calMonth = v.slice(0, 7); renderSolicitar(); } },
+        h('span', { class: 'dk' }, 'Fecha ' + (idx + 1)),
+        h('span', { class: 'dv' }, v ? longDay(v) : 'Elegir fecha')));
+    });
+    wrap.append(row);
+    if (S.openCal && S.openCal.charAt(0) === prefix && !locked) {
+      var slot = S.openCal.slice(1);
+      var other = vals[slot === 'a' ? 'b' : 'a'];
+      wrap.append(calendarEl(vals[slot], other, function (iso) { setVal(slot, iso); S.openCal = null; renderSolicitar(); }));
+    }
+    return wrap;
+  }
+
+  /* Vista de cuadrillas */
+  function gatePanel() {
+    var inp = h('input', { type: 'text', id: 'code', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', maxlength: '12', placeholder: 'Ej. K7M2QX' });
+    var go = function () { tryUnlock(inp.value); };
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    return h('div', { class: 'panel gate' },
+      h('div', { class: 'field' },
+        h('label', { class: 'label', for: 'code' }, 'Código de tu cuadrilla'),
+        h('span', { class: 'hint' }, 'Te lo entrega el administrador. Hay uno por cuadrilla.'),
+        inp),
+      h('div', { class: 'row' },
+        h('button', { type: 'button', class: 'btn primary', onclick: go }, 'Entrar'),
+        h('span', { class: 'msg bad', role: 'status' }, S.unlockErr)));
+  }
+  function confirmPanel() {
+    return h('div', { class: 'panel' },
+      h('div', { class: 'eyebrow' }, 'Confirma tu cuadrilla'),
+      h('div', { class: 'confirm-v' }, S.cfg.crews[S.pending]),
+      h('div', { class: 'hint' }, '¿Eres de esta cuadrilla? Las fechas que elijas quedarán a su nombre.'),
+      h('div', { class: 'row' },
+        h('button', { type: 'button', class: 'btn primary', onclick: confirmCrew }, 'Sí, es mi cuadrilla'),
+        h('button', { type: 'button', class: 'btn', onclick: cancelPending }, 'No, volver')));
+  }
+  function registeredCard(closed) {
+    var p = S.pet;
+    return h('div', { class: 'confirm' },
+      h('div', { class: 'confirm-k' }, 'Solicitud registrada'),
+      h('div', { class: 'confirm-v' }, longDay(p.dates[0])),
+      h('div', { class: 'confirm-v' }, longDay(p.dates[1])),
+      h('div', { class: 'hint' }, closed ? 'El plazo terminó. Esta solicitud ya no se puede cambiar.' : 'Puedes cambiarla hasta el ' + dlText(S.cfg) + '.'));
+  }
+
+  function renderSolicitar() {
+    var v = $('#v-solicitar');
+    v.replaceChildren();
+    var box = h('div', { class: 'stack' });
+    v.append(box);
+    if (!S.db) { box.append(note('bad', 'Abre esta página desde Claude con tu sesión iniciada para poder guardar solicitudes.')); return; }
+    if (S.cfg === undefined) { box.append(note('', S.slow ? 'Todavía no se logra conectar. La página sigue intentando.' : 'Cargando fechas…')); return; }
+    if (S.cfg === null || !S.cfg.days.length || !S.cfg.crews.length) {
+      box.append(note('', S.owner ? 'Todavía no hay fechas. Ve a Configurar y define los días habilitados, la fecha límite y las cuadrillas.' : 'El administrador todavía no publica las fechas de este mes.'));
+      return;
+    }
+    if (!codeMode()) {
+      box.append(note('', S.owner ? 'Guarda la configuración en Configurar para crear los códigos de acceso de las cuadrillas.' : 'El administrador todavía no activa los accesos de las cuadrillas.'));
+      return;
+    }
+    var cfg = S.cfg, closed = isClosed();
+
+    if (S.crewIdx == null) {
+      if (closed) { box.append(note('bad', 'El plazo para solicitar descanso terminó. Si necesitas algo, comunícate con el administrador.')); return; }
+      box.append(S.pending != null ? confirmPanel() : gatePanel());
+      return;
+    }
+
+    box.append(h('div', { class: 'crewfixed' }, h('span', null, cfg.crews[S.crewIdx]),
+      h('button', { type: 'button', class: 'btn', onclick: leaveCrew }, 'No soy esta cuadrilla')));
+
+    if (closed) {
+      if (S.pet) box.append(registeredCard(true));
+      else box.append(note('bad', 'El plazo para solicitar descanso terminó y no hay solicitud registrada. Comunícate con el administrador.'));
+      return;
+    }
+
+    var used = S.pet ? (S.pet.changes || 0) : 0;
+    var locked = !!S.pet && used >= MAX_CHANGES;
+    var can = !!S.uid && S.canWrite !== false;
+    if (!S.uid) box.append(note('warn', 'Inicia sesión en Claude para enviar tu solicitud.'));
+    else if (S.canWrite === false) box.append(note('warn', 'Tu acceso es de solo lectura. Pide al administrador que te invite como Contribuidor.'));
+    if (S.pet) box.append(registeredCard(false));
+
+    var a = S.pick.a, b = S.pick.b;
+    var changed = !S.pet || !a || !b || !sameSet(S.pet.dates, [a, b]);
+    var ready = !!a && !!b && a !== b;
+    var left = MAX_CHANGES - used;
+
+    var form = h('div', { class: 'panel' },
+      h('fieldset', { disabled: !can },
+        h('div', { class: 'field' },
+          h('span', { class: 'label' }, S.pet ? 'Tus fechas de descanso' : 'Elige tus 2 fechas de descanso'),
+          dateButtons('m', S.pick, function (slot, iso) { S.pick[slot] = iso; S.touched = true; S.msg = null; }, locked || !can)),
+        h('div', { class: 'row' },
+          h('button', { type: 'button', class: 'btn primary', id: 'send', disabled: S.busy || locked || !ready || !changed, onclick: saveDates }, S.pet ? 'Guardar cambio' : 'Enviar solicitud'),
+          h('span', { class: 'msg' + (S.msg ? ' ' + S.msg.k : ''), role: 'status' }, S.msg ? S.msg.t : '')),
+        h('div', { class: 'hint' }, S.pet
+          ? 'Cambios usados: ' + used + ' de ' + MAX_CHANGES + (left > 0 ? '. Te ' + (left === 1 ? 'queda 1 cambio.' : 'quedan ' + left + ' cambios.') : '.')
+          : 'Elige 2 fechas distintas. Si te equivocas, podrás cambiarlas hasta ' + MAX_CHANGES + ' veces.')));
+    box.append(form);
+
+    if (S.apel) {
+      var st = S.apel.status;
+      if (st === 'pendiente') box.append(note('warn', 'Tu apelación fue enviada y está esperando respuesta del administrador.'));
+      else if (st === 'aprobada') box.append(note('ok', 'Tu apelación fue aprobada y tus fechas quedaron actualizadas.'));
+      else if (st === 'rechazada') box.append(note('bad', 'Tu apelación fue rechazada. Tus fechas siguen como están registradas.'));
+    }
+    if (locked) {
+      var pendingAppeal = S.apel && S.apel.status === 'pendiente';
+      if (!pendingAppeal && !S.showAppeal) {
+        box.append(note('warn', 'Ya usaste tus ' + MAX_CHANGES + ' cambios. Si necesitas otro, envía una apelación.'));
+        box.append(h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn primary', disabled: !can, onclick: openAppeal }, 'Enviar apelación')));
+      }
+      if (!pendingAppeal && S.showAppeal) box.append(appealForm(can));
+    }
+  }
+
+  async function saveDates() {
+    if (S.busy) return;
+    if (isClosed()) { S.msg = { k: 'bad', t: 'El plazo terminó. La solicitud no se guardó.' }; renderAll(); return; }
+    var a = S.pick.a, b = S.pick.b;
+    if (!a || !b || a === b || S.crewIdx == null) return;
+    S.busy = true; renderSolicitar();
+    try {
+      var ref = S.db.doc('peticiones/c' + S.crewIdx);
+      var snap = await ref.get();
+      var cur = snap.exists && validDates(snap.data()) ? snap.data() : null;
+      var changes = cur ? (cur.changes || 0) : 0;
+      if (cur && sameSet(cur.dates, [a, b])) {
+        S.msg = { k: 'bad', t: 'Esas ya son tus fechas registradas.' };
+      } else if (cur && changes >= MAX_CHANGES) {
+        S.msg = { k: 'bad', t: 'Ya usaste tus ' + MAX_CHANGES + ' cambios. Envía una apelación.' };
+      } else {
+        await ref.set({ crew: S.crewIdx, dates: [a, b], changes: cur ? changes + 1 : 0, at: new Date().toISOString() });
+        S.touched = false;
+        var rest = cur ? MAX_CHANGES - (changes + 1) : MAX_CHANGES;
+        S.msg = { k: 'ok', t: cur ? 'Cambio guardado. ' + (rest === 0 ? 'Ya no te quedan cambios.' : 'Te queda ' + rest + ' cambio.') : 'Solicitud guardada.' };
+      }
+    } catch (e) {
+      S.msg = { k: 'bad', t: e && e.code === 'invalid_argument' ? 'No tienes permiso para enviar solicitudes. Pide al administrador acceso de Contribuidor.' : 'No se pudo guardar. Intenta de nuevo.' };
+    }
+    S.busy = false;
+    renderSolicitar();
+  }
+
+  /* Apelación */
+  function openAppeal() {
+    S.showAppeal = true; S.openCal = null; S.apMsg = null;
+    S.apDates = S.pet ? { a: S.pet.dates[0], b: S.pet.dates[1] } : { a: '', b: '' };
+    renderSolicitar();
+  }
+  function encodeImage(img) {
+    var sizes = [1100, 900, 700, 500];
+    for (var s = 0; s < sizes.length; s++) {
+      var sc = Math.min(1, sizes[s] / Math.max(img.width, img.height));
+      var w = Math.max(1, Math.round(img.width * sc)), hh = Math.max(1, Math.round(img.height * sc));
+      var cv = document.createElement('canvas');
+      cv.width = w; cv.height = hh;
+      var cx = cv.getContext('2d');
+      cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, w, hh);
+      cx.drawImage(img, 0, 0, w, hh);
+      for (var q = 0.8; q >= 0.3; q -= 0.1) {
+        var data = cv.toDataURL('image/jpeg', q);
+        if (data.length <= 190000) return data;
+      }
+    }
+    return null;
+  }
+  function readImage(file) {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onerror = function () { reject(new Error('read')); };
+      fr.onload = function () {
+        var img = new Image();
+        img.onerror = function () { reject(new Error('img')); };
+        img.onload = function () {
+          var data = encodeImage(img);
+          if (data) resolve({ name: String(file.name || 'evidencia').slice(0, 60), data: data }); else reject(new Error('big'));
+        };
+        img.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  async function onFile(e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    if (f.type.indexOf('image/') !== 0) { S.apMsg = { k: 'bad', t: 'Solo se aceptan fotos o capturas de pantalla.' }; renderSolicitar(); return; }
+    try { S.apFile = await readImage(f); S.apMsg = null; }
+    catch (err) { S.apFile = null; S.apMsg = { k: 'bad', t: 'No se pudo preparar la imagen. Prueba con otra foto.' }; }
+    renderSolicitar();
+  }
+  function appealForm(can) {
+    var ta = h('textarea', { id: 'apText', rows: '3', maxlength: String(MAX_APPEAL), placeholder: 'Motivo de tu apelación (máximo 100 caracteres)' });
+    ta.value = S.apText;
+    var counter = h('span', { class: 'counter', id: 'apCount' }, S.apText.length + '/' + MAX_APPEAL);
+    ta.addEventListener('input', function () { S.apText = ta.value; counter.textContent = ta.value.length + '/' + MAX_APPEAL; });
+    var fileInp = h('input', { type: 'file', id: 'apFile', accept: 'image/*', onchange: onFile });
+    return h('div', { class: 'panel' },
+      h('h2', null, 'Apelación'),
+      h('fieldset', { disabled: !can || S.apBusy },
+        h('div', { class: 'field' }, h('span', { class: 'label' }, 'Fechas que necesitas'), dateButtons('p', S.apDates, function (slot, iso) { S.apDates[slot] = iso; }, false)),
+        h('div', { class: 'field' }, h('label', { class: 'label', for: 'apText' }, 'Motivo'), ta, counter),
+        h('div', { class: 'field' },
+          h('label', { class: 'label', for: 'apFile' }, 'Evidencia (opcional)'),
+          h('span', { class: 'hint' }, 'Una foto o captura de pantalla.'),
+          fileInp,
+          S.apFile ? h('div', { class: 'stack' }, h('img', { class: 'thumb', src: S.apFile.data, alt: 'Evidencia adjunta' }),
+            h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: function () { S.apFile = null; renderSolicitar(); } }, 'Quitar imagen'))) : null),
+        h('div', { class: 'row' },
+          h('button', { type: 'button', class: 'btn primary', onclick: sendAppeal }, 'Enviar apelación'),
+          h('button', { type: 'button', class: 'btn', onclick: function () { S.showAppeal = false; S.openCal = null; S.apMsg = null; renderSolicitar(); } }, 'Cancelar'),
+          h('span', { class: 'msg' + (S.apMsg ? ' ' + S.apMsg.k : ''), role: 'status' }, S.apMsg ? S.apMsg.t : ''))));
+  }
+  async function sendAppeal() {
+    if (S.apBusy) return;
+    if (isClosed()) { S.apMsg = { k: 'bad', t: 'El plazo terminó. Ya no se pueden enviar apelaciones.' }; renderAll(); return; }
+    var text = S.apText.trim();
+    var a = S.apDates.a, b = S.apDates.b;
+    if (!a || !b || a === b) { S.apMsg = { k: 'bad', t: 'Elige 2 fechas distintas.' }; renderSolicitar(); return; }
+    if (!text) { S.apMsg = { k: 'bad', t: 'Escribe el motivo de tu apelación.' }; renderSolicitar(); return; }
+    if (text.length > MAX_APPEAL) { S.apMsg = { k: 'bad', t: 'El motivo pasa de ' + MAX_APPEAL + ' caracteres.' }; renderSolicitar(); return; }
+    S.apBusy = true;
+    try {
+      var ref = S.db.doc('apelaciones/c' + S.crewIdx);
+      var snap = await ref.get();
+      if (snap.exists && snap.data().status === 'pendiente') {
+        S.apMsg = { k: 'bad', t: 'Ya tienes una apelación pendiente.' };
+      } else {
+        await ref.set({ crew: S.crewIdx, text: text, dates: [a, b], file: S.apFile || null, status: 'pendiente', at: new Date().toISOString() });
+        S.showAppeal = false; S.apText = ''; S.apFile = null; S.apMsg = null; S.openCal = null;
+      }
+    } catch (e) {
+      S.apMsg = { k: 'bad', t: 'No se pudo enviar. Intenta de nuevo.' };
+    }
+    S.apBusy = false;
+    renderSolicitar();
+  }
+
+  /* Resumen del administrador */
+  function crewRecords() {
+    var cfg = S.cfg, dl = Date.parse(cfg.deadline);
+    return cfg.crews.map(function (_, i) {
+      var pet = S.allPet.filter(function (d) { return d.id === 'c' + i; })[0];
+      var ap = S.allApel.filter(function (d) { return d.id === 'c' + i; })[0];
+      if (pet && !validDates(pet)) pet = null;
+      return { pet: pet || null, ap: ap || null, late: !!pet && !pet.manual && Date.parse(pet.at) > dl };
+    });
+  }
+  function imgSrc(f) { return f && typeof f.data === 'string' && f.data.indexOf('data:image/') === 0 ? f.data : null; }
+
+  function renderResumen() {
+    var v = $('#v-resumen');
+    v.replaceChildren();
+    var box = h('div', { class: 'stack', style: 'gap:18px' });
+    v.append(box);
+    if (!S.cfg || !S.cfg.days.length) { box.append(note('', 'Configura primero los días habilitados y las cuadrillas.')); return; }
+    var cfg = S.cfg, recs = crewRecords(), closed = isClosed();
+    var done = recs.filter(function (r) { return r.pet; }).length;
+    var missing = [];
+    recs.forEach(function (r, i) { if (!r.pet) missing.push(cfg.crews[i]); });
+
+    box.append(h('div', { class: 'panel' },
+      h('div', { class: 'sumtop' },
+        h('div', null, h('div', { class: 'big' }, done + ' de ' + cfg.crews.length), h('div', { class: 'hint' }, 'cuadrillas con solicitud')),
+        h('div', { class: 'actions' },
+          h('button', { type: 'button', class: 'btn', onclick: toggleClose }, cfg.closed ? 'Quitar cierre manual' : 'Cerrar ahora'),
+          h('button', { type: 'button', class: 'btn primary', onclick: copyList }, 'Copiar lista'))),
+      closed && !cfg.closed ? h('div', { class: 'hint' }, 'La fecha límite ya pasó. Para reabrir, cambia la fecha en Configurar.') : null,
+      missing.length ? h('div', { class: 'field' }, h('span', { class: 'hint' }, 'Faltan por enviar'), h('div', { class: 'chips' }, missing.map(function (n) { return h('span', { class: 'chip' }, n); }))) : null,
+      h('div', { id: 'copyArea' })));
+
+    /* Apelaciones */
+    var pend = [], resolved = 0;
+    recs.forEach(function (r, i) {
+      if (!r.ap) return;
+      if (r.ap.status === 'pendiente') pend.push({ i: i, ap: r.ap, pet: r.pet }); else resolved++;
+    });
+    if (pend.length || resolved) {
+      box.append(h('div', { class: 'panel' },
+        h('h2', null, 'Apelaciones'),
+        pend.length ? pend.map(function (p) {
+          var src = imgSrc(p.ap.file);
+          var big = S.bigImg === p.i;
+          return h('div', { class: 'appeal' },
+            h('div', { class: 'row' }, h('strong', null, cfg.crews[p.i]), tag('warn', 'Pendiente'), h('span', { class: 'hint' }, sentText(p.ap.at))),
+            h('p', null, String(p.ap.text || '')),
+            h('div', { class: 'hint' }, 'Pide: ' + (Array.isArray(p.ap.dates) && p.ap.dates.length === 2 ? shortDay(p.ap.dates[0]) + ' y ' + shortDay(p.ap.dates[1]) : '—') +
+              (p.pet ? '. Fechas actuales: ' + shortDay(p.pet.dates[0]) + ' y ' + shortDay(p.pet.dates[1]) + '.' : '.')),
+            src ? h('img', { class: 'thumb' + (big ? ' big' : ''), src: src, alt: 'Evidencia de ' + cfg.crews[p.i], onclick: function () { S.bigImg = big ? null : p.i; renderResumen(); } }) : null,
+            h('div', { class: 'row' },
+              h('button', { type: 'button', class: 'btn primary', onclick: function () { resolveAppeal(p.i, p.ap, true); } }, 'Aprobar'),
+              h('button', { type: 'button', class: 'btn', onclick: function () { resolveAppeal(p.i, p.ap, false); } }, 'Rechazar')));
+        }) : h('div', { class: 'hint' }, 'No hay apelaciones pendientes.'),
+        resolved ? h('div', { class: 'hint' }, 'Apelaciones ya resueltas: ' + resolved) : null));
+    }
+
+    /* Por día */
+    var days = cfg.days.slice();
+    var extras = [];
+    recs.forEach(function (r) { if (r.pet) r.pet.dates.forEach(function (d) { if (days.indexOf(d) < 0 && extras.indexOf(d) < 0) extras.push(d); }); });
+    var cards = days.concat(extras).map(function (day) {
+      var names = [];
+      recs.forEach(function (r, i) { if (r.pet && r.pet.dates.indexOf(day) >= 0) names.push(cfg.crews[i]); });
+      return h('div', { class: 'daycard' + (names.length ? '' : ' empty') },
+        h('div', { class: 'dc-head' }, h('span', { class: 'dc-date' }, shortDay(day) + (days.indexOf(day) < 0 ? ' *' : '')), h('span', { class: 'dc-n' }, String(names.length))),
+        h('ul', { class: 'dc-list' }, names.map(function (n) { return h('li', null, n); })));
+    });
+    box.append(h('div', { class: 'panel' }, h('h2', null, 'Por día'), h('div', { class: 'daygrid' }, cards),
+      extras.length ? h('div', { class: 'hint' }, '* Fecha que ya no está en la lista de días habilitados.') : null));
+
+    /* Por cuadrilla */
+    var rows = cfg.crews.map(function (name, i) {
+      var r = recs[i];
+      var opts = function (cur) {
+        var list = days.slice();
+        if (cur && list.indexOf(cur) < 0) list.push(cur);
+        return [h('option', { value: '' }, '— sin día —')].concat(list.map(function (d) { return h('option', { value: d }, shortDay(d)); }));
+      };
+      var selA = h('select', { 'aria-label': 'Fecha 1 de ' + name }, opts(r.pet && r.pet.dates[0]));
+      var selB = h('select', { 'aria-label': 'Fecha 2 de ' + name }, opts(r.pet && r.pet.dates[1]));
+      selA.value = r.pet ? r.pet.dates[0] : '';
+      selB.value = r.pet ? r.pet.dates[1] : '';
+      var onChange = function () { setManual(i, selA.value, selB.value); };
+      selA.addEventListener('change', onChange);
+      selB.addEventListener('change', onChange);
+      var tags = [];
+      if (!r.pet) tags.push(tag('', 'Sin solicitud'));
+      else if (r.pet.manual) tags.push(tag('ok', r.pet.viaAppeal ? 'Por apelación' : 'Asignada por ti'));
+      else if (r.late) tags.push(tag('bad', 'Fuera de plazo'));
+      else tags.push(tag('ok', 'Recibida'));
+      if (r.ap && r.ap.status === 'pendiente') tags.push(tag('warn', 'Apelación pendiente'));
+      return h('tr', null, h('td', null, name), h('td', null, selA), h('td', null, selB),
+        h('td', { class: 'mono' }, r.pet ? (r.pet.changes || 0) + '/' + MAX_CHANGES : ''),
+        h('td', null, tags), h('td', { class: 'mono' }, r.pet && !r.pet.manual ? sentText(r.pet.at) : ''));
+    });
+    box.append(h('div', { class: 'panel' }, h('h2', null, 'Por cuadrilla'),
+      h('div', { class: 'tablewrap' }, h('table', null,
+        h('thead', null, h('tr', null, h('th', null, 'Cuadrilla'), h('th', null, 'Fecha 1'), h('th', null, 'Fecha 2'), h('th', null, 'Cambios'), h('th', null, 'Estado'), h('th', null, 'Enviada'))),
+        h('tbody', null, rows))),
+      h('div', { class: 'hint' }, 'Puedes asignar o corregir fechas a mano desde las listas. Para borrar una solicitud, deja las dos fechas en "sin día".')));
+  }
+
+  async function toggleClose() {
+    try { await S.db.doc('config/mes').update({ closed: !S.cfg.closed }); toast(S.cfg.closed ? 'Cierre manual quitado' : 'Solicitudes cerradas'); }
+    catch (e) { toast('No se pudo cambiar el estado'); }
+  }
+  async function setManual(i, a, b) {
+    var ref = S.db.doc('peticiones/c' + i);
+    try {
+      if (!a && !b) { await ref.delete(); return; }
+      if (!a || !b || a === b) { toast('Elige 2 fechas distintas'); renderResumen(); return; }
+      var cur = S.allPet.filter(function (d) { return d.id === 'c' + i; })[0];
+      await ref.set({ crew: i, dates: [a, b], changes: cur && cur.changes ? cur.changes : 0, at: new Date().toISOString(), manual: true });
+    } catch (e) { toast('No se pudo guardar el cambio'); renderResumen(); }
+  }
+  async function resolveAppeal(i, ap, ok) {
+    try {
+      if (ok) {
+        if (!Array.isArray(ap.dates) || ap.dates.length !== 2) { toast('La apelación no trae fechas válidas'); return; }
+        var cur = S.allPet.filter(function (d) { return d.id === 'c' + i; })[0];
+        await S.db.doc('peticiones/c' + i).set({ crew: i, dates: ap.dates, changes: cur && cur.changes ? cur.changes : 0, at: new Date().toISOString(), manual: true, viaAppeal: true });
+      }
+      await S.db.doc('apelaciones/c' + i).update({ status: ok ? 'aprobada' : 'rechazada', resolvedAt: new Date().toISOString() });
+      toast(ok ? 'Apelación aprobada' : 'Apelación rechazada');
+    } catch (e) { toast('No se pudo guardar la respuesta'); }
+  }
+  function copyList() {
+    var cfg = S.cfg, recs = crewRecords();
+    var lines = ['Cuadrilla\tFecha 1\tFecha 2'];
+    cfg.crews.forEach(function (n, i) {
+      var p = recs[i].pet;
+      lines.push(n + '\t' + (p ? p.dates[0] : '') + '\t' + (p ? p.dates[1] : ''));
+    });
+    var text = lines.join('\n');
+    var area = $('#copyArea');
+    function fallback() {
+      area.replaceChildren(h('label', { class: 'hint', for: 'copyBox' }, 'Selecciona y copia este texto:'), h('textarea', { id: 'copyBox', class: 'copybox', readonly: true }, text));
+      var t = $('#copyBox'); t.focus(); t.select();
+    }
+    try {
+      navigator.clipboard.writeText(text).then(function () { area.replaceChildren(); toast('Lista copiada, pégala en Excel'); }, fallback);
+    } catch (e) { fallback(); }
+  }
+
+  /* Configuración */
+  function buildDayInputs() {
+    var box = $('#dayInputs');
+    for (var i = 0; i < 10; i++) {
+      box.append(h('label', { for: 'day-' + i }, 'Día ' + (i + 1), h('input', { type: 'date', id: 'day-' + i })));
+    }
+  }
+  function renderCrewRows() {
+    var box = $('#crewRows');
+    box.replaceChildren();
+    S.draft.forEach(function (r, i) {
+      var inp = h('input', { type: 'text', id: 'crew-' + i, value: r.name, maxlength: '40', 'aria-label': 'Nombre de la cuadrilla ' + (i + 1) });
+      inp.addEventListener('input', function () { r.name = inp.value; });
+      box.append(h('div', { class: 'crewrow' }, inp,
+        h('span', { class: 'code', 'aria-label': 'Código de ' + r.name }, r.code),
+        h('button', { type: 'button', class: 'btn', onclick: function () { r.code = genCode(); S.dirty = true; renderCrewRows(); } }, 'Nuevo código'),
+        h('button', { type: 'button', class: 'btn', onclick: function () { copyText('Código de ' + r.name + ' para solicitar descanso: ' + r.code, 'Código copiado'); } }, 'Copiar')));
+    });
+  }
+  function fillConfig() {
+    var cfg = S.cfg;
+    for (var i = 0; i < 10; i++) $('#day-' + i).value = cfg && cfg.days[i] ? cfg.days[i] : '';
+    $('#deadline').value = cfg && !isNaN(Date.parse(cfg.deadline)) ? toLocalInput(cfg.deadline) : '';
+    var names = cfg && cfg.crews.length ? cfg.crews : Array.from({ length: 13 }, function (_, i) { return 'Cuadrilla ' + (i + 1); });
+    S.draft = names.map(function (n, i) { return { name: n, code: S.codes[i] || genCode() }; });
+    renderCrewRows();
+  }
+  async function saveConfig(ev) {
+    ev.preventDefault();
+    var msg = $('#cfgMsg');
+    function say(k, t) { msg.textContent = t; msg.className = 'msg ' + k; }
+    var days = [];
+    for (var i = 0; i < 10; i++) days.push($('#day-' + i).value);
+    if (days.some(function (d) { return !d; })) { say('bad', 'Completa los 10 días.'); return; }
+    if (new Set(days).size !== 10) { say('bad', 'Hay días repetidos.'); return; }
+    var dl = $('#deadline').value;
+    if (!dl) { say('bad', 'Elige la fecha límite.'); return; }
+    var crews = S.draft.map(function (r) { return String(r.name).trim().slice(0, 40); });
+    if (!crews.length || crews.some(function (n) { return !n; })) { say('bad', 'Cada cuadrilla necesita un nombre.'); return; }
+    if (new Set(crews.map(function (n) { return n.toLowerCase(); })).size !== crews.length) { say('bad', 'Hay nombres de cuadrilla repetidos.'); return; }
+    if (!window.crypto || !crypto.subtle) { say('bad', 'Este navegador no permite crear códigos de acceso.'); return; }
+    if (!S.codesLoaded) { say('bad', 'Espera un momento, se están cargando los códigos.'); return; }
+    days.sort();
+    $('#saveCfg').disabled = true;
+    try {
+      var plain = S.draft.map(function (r) { return r.code; });
+      var hashes = await Promise.all(plain.map(function (c, i) { return hashCode(i, c); }));
+      var data = { days: days, deadline: dl + ':00-06:00', crews: crews, codes: hashes, closed: S.cfg ? S.cfg.closed : false };
+      await S.db.doc('accesos/codigos').set({ codes: plain });
+      await S.db.doc('config/mes').set(data);
+      S.dirty = false;
+      say('ok', 'Guardado.');
+    } catch (e) { say('bad', 'No se pudo guardar. Intenta de nuevo.'); }
+    $('#saveCfg').disabled = false;
+  }
+
+  function renderAll() {
+    renderHead();
+    renderSolicitar();
+    if (S.owner) renderResumen();
+    showTab();
+  }
+
+  async function init() {
+    buildDayInputs();
+    $('#cfgForm').addEventListener('input', function () { S.dirty = true; });
+    $('#cfgForm').addEventListener('submit', saveConfig);
+    $('#addCrew').addEventListener('click', function () {
+      if (S.draft.length >= 40) { toast('Máximo 40 cuadrillas'); return; }
+      S.draft.push({ name: 'Cuadrilla ' + (S.draft.length + 1), code: genCode() });
+      S.dirty = true;
+      renderCrewRows();
+    });
+    $('#copyCodes').addEventListener('click', function () {
+      var lines = ['Cuadrilla\tCódigo'].concat(S.draft.map(function (r) { return r.name + '\t' + r.code; }));
+      copyText(lines.join('\n'), 'Códigos copiados');
+    });
+    fillConfig();
+    renderAll();
+    setInterval(tick, 1000);
+
+    var db = null, user = null;
+    try { db = await (window.claude && window.claude.use ? window.claude.use('db') : null); } catch (e) {}
+    try { user = await (window.claude && window.claude.use ? window.claude.use('user') : null); } catch (e) {}
+    if (!db) { renderAll(); return; }
+    S.db = db;
+    if (user) {
+      try { S.uid = await user.id(); } catch (e) {}
+      try { S.owner = await user.isOwner(); } catch (e) {}
+      try { S.canWrite = await user.can('data.write'); } catch (e) {}
+    }
+    renderAll();
+
+    var slowTimer = setTimeout(function () { if (S.cfg === undefined) { S.slow = true; renderAll(); } }, 10000);
+    db.doc('config/mes').onSnapshot(function (snap) {
+      clearTimeout(slowTimer);
+      S.cfg = snap.exists ? normCfg(snap.data()) : null;
+      if (S.cfg === null && S.owner && !S.tabSet) { S.tab = 'configurar'; S.tabSet = true; }
+      if (!S.dirty) fillConfig();
+      renderAll();
+      if (codeMode()) revalidate();
+      else if (S.crewIdx != null) { S.crewIdx = null; resetWork(); subscribeCrew(); renderSolicitar(); }
+    }, function () { S.slow = true; renderAll(); });
+
+    if (S.owner) {
+      db.doc('accesos/codigos').onSnapshot(function (snap) {
+        var d = snap.exists ? snap.data() : null;
+        S.codes = d && Array.isArray(d.codes) ? d.codes.map(String) : [];
+        S.codesLoaded = true;
+        if (!S.dirty && S.cfg !== undefined) fillConfig();
+      }, function () {});
+      var mapDocs = function (snap) {
+        return snap.docs.map(function (d) { var o = {}; var x = d.data(); for (var k in x) o[k] = x[k]; o.id = d.id; return o; });
+      };
+      db.collection('peticiones').onSnapshot(function (snap) { S.allPet = mapDocs(snap); if (S.cfg) renderResumen(); }, function () {});
+      db.collection('apelaciones').onSnapshot(function (snap) { S.allApel = mapDocs(snap); if (S.cfg) renderResumen(); renderTabs(); }, function () {});
+    }
+  }
+  init();
+})();
+</script>
+
+</body></html>
